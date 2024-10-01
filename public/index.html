@@ -1,27 +1,40 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스마트폰 사진 업로드 및 인쇄</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HANA STUDIO</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://kit.fontawesome.com/your-font-awesome-kit.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
     <div class="container">
-        <h1>스마트폰 사진 업로드 및 인쇄</h1>
-        <form id="uploadForm">
-            <input type="file" id="photoInput" accept="image/*">
-            <div id="imagePreview"></div>
-            <div id="editControls" style="display: none;">
-                <button type="button" id="zoomIn">확대</button>
-                <button type="button" id="zoomOut">축소</button>
-                <button type="button" id="saveEdit">편집 저장</button>
-            </div>
-            <button type="submit" id="uploadButton" disabled>업로드 및 인쇄</button>
-        </form>
-        <div id="result"></div>
+      <h1>HANA STUDIO</h1>
+      <h2>사진업로드 인쇄</h2>
+      <form id="uploadForm">
+        <label for="photoInput" class="file-upload-btn">
+          <i class="fas fa-camera"></i> 사진 선택
+        </label>
+        <input type="file" id="photoInput" accept="image/*" hidden />
+        <div id="imagePreviewContainer">
+          <img id="imagePreview" alt="미리보기" />
+          <div id="cropBox"></div>
+        </div>
+        <div id="controlsContainer">
+          <button type="button" id="saveButton">저장</button>
+          <button type="button" id="printButton">인쇄</button>
+        </div>
+      </form>
+      <div id="result"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
