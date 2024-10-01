@@ -19,22 +19,31 @@
       <h1>HANA STUDIO</h1>
       <h2>사진업로드 인쇄</h2>
       <form id="uploadForm">
+        <label for="kioskIdInput" class="file-upload-btn">
+          <i class="fas fa-qrcode"></i> 키오스크 QR 코드 스캔
+        </label>
+        <input type="text" id="kioskIdInput" placeholder="키오스크 ID" hidden />
         <label for="photoInput" class="file-upload-btn">
           <i class="fas fa-camera"></i> 사진 선택
         </label>
         <input type="file" id="photoInput" accept="image/*" hidden />
         <div id="imagePreviewContainer">
           <img id="imagePreview" alt="미리보기" />
-          <div id="cropBox"></div>
+          <div id="cropBox">
+            <div class="resize-handle top-left"></div>
+            <div class="resize-handle top-right"></div>
+            <div class="resize-handle bottom-left"></div>
+            <div class="resize-handle bottom-right"></div>
+          </div>
         </div>
         <div id="controlsContainer">
           <button type="button" id="saveButton">저장</button>
-          <button type="button" id="printButton">인쇄</button>
+          <button type="button" id="printButton">인쇄 요청</button>
         </div>
       </form>
       <div id="result"></div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="script.js"></script>
   </body>
 </html>

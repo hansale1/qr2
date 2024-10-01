@@ -6,9 +6,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveButton = document.getElementById("saveButton");
   const printButton = document.getElementById("printButton");
   const resultDiv = document.getElementById("result");
+  const kioskIdInput = document.getElementById("kioskIdInput");
 
   let originalImage;
-  let cropBoxRect = { x: 0, y: 0, width: 200, height: 200 };
+  let cropBoxRect = { x: 0, y: 0, width: 0, height: 0 };
+
+  // QR 코드 스캐너 초기화
+  const html5QrCode = new Html5Qrcode("reader");
+  const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+    kioskIdInput.value = decodedText;
+    html5QrCode.stop();
+  };
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+  // QR 코드 스캔 버튼 이벤트
+  document
+    .querySelector('label[for="kioskIdInput"]')
+    .addEventListener("click", () => {
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        qrCodeSuccessCallback
+      );
+    });
 
   photoInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -31,12 +51,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function initCropBox() {
     const containerRect = imagePreview.getBoundingClientRect();
     cropBoxRect = {
-      x: containerRect.width / 4,
-      y: containerRect.height / 4,
-      width: containerRect.width / 2,
-      height: containerRect.height / 2,
+      x: 0,
+      y: 0,
+      width: containerRect.width,
+      height: containerRect.height,
     };
     updateCropBox();
+    cropBox.style.display = "block";
   }
 
   function updateCropBox() {
@@ -47,41 +68,105 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   let isDragging = false;
-  let startX, startY;
+  let isResizing = false;
+  let startX, startY, startWidth, startHeight;
+  let currentHandle;
 
   cropBox.addEventListener("mousedown", startDragging);
   cropBox.addEventListener("touchstart", startDragging);
 
-  document.addEventListener("mousemove", drag);
-  document.addEventListener("touchmove", drag);
+  document.addEventListener("mousemove", dragOrResize);
+  document.addEventListener("touchmove", dragOrResize);
 
   document.addEventListener("mouseup", stopDragging);
   document.addEventListener("touchend", stopDragging);
 
   function startDragging(e) {
-    isDragging = true;
+    if (e.target.classList.contains("resize-handle")) {
+      isResizing = true;
+      currentHandle = e.target.classList[1];
+    } else {
+      isDragging = true;
+    }
     startX = (e.clientX || e.touches[0].clientX) - cropBoxRect.x;
     startY = (e.clientY || e.touches[0].clientY) - cropBoxRect.y;
+    startWidth = cropBoxRect.width;
+    startHeight = cropBoxRect.height;
     e.preventDefault();
   }
 
-  function drag(e) {
-    if (!isDragging) return;
+  function dragOrResize(e) {
+    if (!isDragging && !isResizing) return;
     const x = (e.clientX || e.touches[0].clientX) - startX;
     const y = (e.clientY || e.touches[0].clientY) - startY;
-    cropBoxRect.x = Math.max(
-      0,
-      Math.min(x, imagePreview.width - cropBoxRect.width)
-    );
-    cropBoxRect.y = Math.max(
-      0,
-      Math.min(y, imagePreview.height - cropBoxRect.height)
-    );
+
+    if (isDragging) {
+      cropBoxRect.x = Math.max(
+        0,
+        Math.min(x, imagePreview.width - cropBoxRect.width)
+      );
+      cropBoxRect.y = Math.max(
+        0,
+        Math.min(y, imagePreview.height - cropBoxRect.height)
+      );
+    } else if (isResizing) {
+      const containerRect = imagePreview.getBoundingClientRect();
+      const maxWidth = containerRect.width;
+      const maxHeight = containerRect.height;
+
+      switch (currentHandle) {
+        case "top-left":
+          cropBoxRect.width = Math.max(10, startWidth - (x - cropBoxRect.x));
+          cropBoxRect.height = Math.max(10, startHeight - (y - cropBoxRect.y));
+          cropBoxRect.x = Math.min(startX + startWidth - 10, x);
+          cropBoxRect.y = Math.min(startY + startHeight - 10, y);
+          break;
+        case "top-right":
+          cropBoxRect.width = Math.max(
+            10,
+            Math.min(
+              maxWidth - cropBoxRect.x,
+              startWidth + (x - (startX + startWidth))
+            )
+          );
+          cropBoxRect.height = Math.max(10, startHeight - (y - cropBoxRect.y));
+          cropBoxRect.y = Math.min(startY + startHeight - 10, y);
+          break;
+        case "bottom-left":
+          cropBoxRect.width = Math.max(10, startWidth - (x - cropBoxRect.x));
+          cropBoxRect.height = Math.max(
+            10,
+            Math.min(
+              maxHeight - cropBoxRect.y,
+              startHeight + (y - (startY + startHeight))
+            )
+          );
+          cropBoxRect.x = Math.min(startX + startWidth - 10, x);
+          break;
+        case "bottom-right":
+          cropBoxRect.width = Math.max(
+            10,
+            Math.min(
+              maxWidth - cropBoxRect.x,
+              startWidth + (x - (startX + startWidth))
+            )
+          );
+          cropBoxRect.height = Math.max(
+            10,
+            Math.min(
+              maxHeight - cropBoxRect.y,
+              startHeight + (y - (startY + startHeight))
+            )
+          );
+          break;
+      }
+    }
     updateCropBox();
   }
 
   function stopDragging() {
     isDragging = false;
+    isResizing = false;
   }
 
   saveButton.addEventListener("click", () => {
@@ -111,14 +196,33 @@ document.addEventListener("DOMContentLoaded", () => {
     resultDiv.textContent = "이미지가 저장되었습니다.";
   });
 
-  printButton.addEventListener("click", () => {
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write("<html><head><title>Print</title></head><body>");
-    printWindow.document.write(
-      '<img src="' + imagePreview.src + '" style="max-width:100%;">'
-    );
-    printWindow.document.write("</body></html>");
-    printWindow.document.close();
-    printWindow.print();
+  printButton.addEventListener("click", async () => {
+    const kioskId = kioskIdInput.value;
+    if (!kioskId) {
+      resultDiv.textContent = "키오스크 QR 코드를 먼저 스캔해주세요.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/request-print", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageData: imagePreview.src,
+          kioskId: kioskId,
+        }),
+      });
+
+      if (response.ok) {
+        resultDiv.textContent = "인쇄 요청이 성공적으로 전송되었습니다.";
+      } else {
+        throw new Error("인쇄 요청 실패");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      resultDiv.textContent = "인쇄 요청 중 오류가 발생했습니다.";
+    }
   });
 });
