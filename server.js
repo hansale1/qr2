@@ -12,7 +12,12 @@ app.get("/", (req, res) => {
   res.send("Hello from HANA STUDIO print server!");
 });
 
-app.post("/request-print", (req, res) => {
+app.use("/api", (req, res, next) => {
+  console.log(`API 요청: ${req.method} ${req.url}`);
+  next();
+});
+
+app.post("/api/request-print", (req, res) => {
   const { imageData, kioskId } = req.body;
   if (!printQueue[kioskId]) {
     printQueue[kioskId] = [];
@@ -22,7 +27,7 @@ app.post("/request-print", (req, res) => {
   res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
 });
 
-app.get("/get-print-job/:kioskId", (req, res) => {
+app.get("/api/get-print-job/:kioskId", (req, res) => {
   const { kioskId } = req.params;
   console.log(`Received print job request for kiosk: ${kioskId}`);
   if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
@@ -33,6 +38,15 @@ app.get("/get-print-job/:kioskId", (req, res) => {
     console.log(`No print job available for kiosk: ${kioskId}`);
     res.status(204).send();
   }
+});
+
+app.use((req, res, next) => {
+  res.status(404).send("Sorry, that route doesn't exist.");
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
 });
 
 const PORT = process.env.PORT || 3000;
