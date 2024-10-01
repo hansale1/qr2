@@ -21,11 +21,13 @@ app.post("/request-print", (req, res) => {
 
 app.get("/get-print-job/:kioskId", (req, res) => {
   const { kioskId } = req.params;
+  console.log(`Received print job request for kiosk: ${kioskId}`);
   if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
     const job = printQueue[kioskId].shift();
     console.log(`Print job sent to kiosk: ${kioskId}`);
     res.json({ job });
   } else {
+    console.log(`No print job available for kiosk: ${kioskId}`);
     res.status(204).send();
   }
 });
