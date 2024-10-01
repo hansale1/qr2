@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트폰 사진 업로드 및 인쇄</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>스마트폰 사진 업로드 및 인쇄</h1>
+        <form id="uploadForm">
+            <input type="file" id="photoInput" accept="image/*">
+            <div id="imagePreview"></div>
+            <div id="editControls" style="display: none;">
+                <button type="button" id="zoomIn">확대</button>
+                <button type="button" id="zoomOut">축소</button>
+                <button type="button" id="saveEdit">편집 저장</button>
+            </div>
+            <button type="submit" id="uploadButton" disabled>업로드 및 인쇄</button>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
