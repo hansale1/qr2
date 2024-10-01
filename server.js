@@ -5,11 +5,14 @@ const app = express();
 
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
-app.use(express.static("public"));
 
 const printQueue = {};
 
-app.post("/api/request-print", (req, res) => {
+app.get("/", (req, res) => {
+  res.send("Hello from HANA STUDIO print server!");
+});
+
+app.post("/request-print", (req, res) => {
   const { imageData, kioskId } = req.body;
   if (!printQueue[kioskId]) {
     printQueue[kioskId] = [];
@@ -19,7 +22,7 @@ app.post("/api/request-print", (req, res) => {
   res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
 });
 
-app.get("/api/get-print-job/:kioskId", (req, res) => {
+app.get("/get-print-job/:kioskId", (req, res) => {
   const { kioskId } = req.params;
   console.log(`Received print job request for kiosk: ${kioskId}`);
   if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
