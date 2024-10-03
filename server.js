@@ -7,10 +7,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// 정적 파일 제공
-app.use(express.static(path.join(__dirname, "public")));
-
-// API 라우트
+// API 라우트를 먼저 정의
 app.get("/api/status", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
@@ -40,7 +37,10 @@ app.get("/api/get-print-job/:kioskId", (req, res) => {
   }
 });
 
-// 모든 GET 요청에 대해 index.html 반환
+// 정적 파일 제공
+app.use(express.static(path.join(__dirname, "public")));
+
+// 모든 다른 GET 요청에 대해 index.html 반환
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
