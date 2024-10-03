@@ -1,16 +1,17 @@
 {
-  "name": "hana-studio-server",
+  "name": "hana-studio-print-server",
   "version": "1.0.0",
-  "description": "인쇄 작업 관리를 위한 HANA STUDIO 서버",
+  "description": "Print server for HANA STUDIO",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "morgan": "^1.10.0"
+    "express": "^4.17.1",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": "14.x"
   }
 }
