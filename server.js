@@ -2,14 +2,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
+const morgan = require("morgan"); // morgan 추가
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(morgan("combined")); // 모든 요청 로그
 
 const printQueue = {};
 
+// **API 라우트를 먼저 정의**
 app.get("/", (req, res) => {
   res.send("HANA STUDIO print server is running");
 });
@@ -40,6 +42,9 @@ app.get("/api/get-print-job/:kioskId", (req, res) => {
     res.status(204).send();
   }
 });
+
+// **그 후 정적 파일 서비스**
+app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
