@@ -4,10 +4,20 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 
+// 환경 변수 설정
+const PORT = process.env.PORT || 3000;
+
+// 미들웨어
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// API 라우트를 먼저 정의
+// 로깅 미들웨어
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// API 라우트 (정적 파일 서비스보다 먼저 정의)
 app.get("/api/status", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
@@ -37,7 +47,7 @@ app.get("/api/get-print-job/:kioskId", (req, res) => {
   }
 });
 
-// 정적 파일 제공
+// 정적 파일 제공 (API 라우트 이후에 정의)
 app.use(express.static(path.join(__dirname, "public")));
 
 // 모든 다른 GET 요청에 대해 index.html 반환
@@ -45,7 +55,7 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const PORT = process.env.PORT || 3000;
+// 서버 시작
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
