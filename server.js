@@ -4,10 +4,8 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 
-// 환경 변수 설정
 const PORT = process.env.PORT || 3000;
 
-// 미들웨어
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
 
@@ -17,7 +15,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// API 라우트 (정적 파일 서비스보다 먼저 정의)
+// API 라우트
 app.get("/api/status", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
@@ -26,6 +24,15 @@ const printQueue = {};
 
 app.post("/api/request-print", (req, res) => {
   const { imageData, kioskId } = req.body;
+  console.log(`Received print request for kiosk: ${kioskId}`);
+
+  if (!imageData || !kioskId) {
+    console.error("Invalid request: missing imageData or kioskId");
+    return res
+      .status(400)
+      .json({ success: false, message: "잘못된 요청입니다." });
+  }
+
   if (!printQueue[kioskId]) {
     printQueue[kioskId] = [];
   }
@@ -47,7 +54,7 @@ app.get("/api/get-print-job/:kioskId", (req, res) => {
   }
 });
 
-// 정적 파일 제공 (API 라우트 이후에 정의)
+// 정적 파일 제공
 app.use(express.static(path.join(__dirname, "public")));
 
 // 모든 다른 GET 요청에 대해 index.html 반환
@@ -55,7 +62,6 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 서버 시작
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
