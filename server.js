@@ -1,71 +1,56 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const path = require("path");
-const morgan = require("morgan"); // morgan 추가
+const cors = require("cors"); // CORS 미들웨어 추가
 const app = express();
+const port = process.env.PORT || 3000;
 
 // 미들웨어 설정
-app.use(cors());
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(morgan("combined")); // 모든 요청 로그
+app.use(
+  cors({
+    origin: "*", // 모든 도메인 허용 (보안상 필요에 따라 제한 가능)
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+app.use(express.json());
 
-const printQueue = {};
+// 인쇄 작업 저장소
+let printJobs = {}; // 키오스크 ID별 인쇄 작업 저장
 
-// **API 라우트를 먼저 정의**
-app.get("/api/status", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
-});
+// 인쇄 작업 추가 엔드포인트
+app.post("/api/print-job/:kioskId", (req, res) => {
+  const kioskId = req.params.kioskId;
+  const { file } = req.body;
 
-app.post("/api/request-print", (req, res) => {
-  const { imageData, kioskId } = req.body;
-  if (!imageData || !kioskId) {
-    return res
-      .status(400)
-      .json({ success: false, message: "imageData와 kioskId가 필요합니다." });
+  if (!file) {
+    console.error(`No file provided for kiosk: ${kioskId}`);
+    return res.status(400).send({ message: "No file provided" });
   }
-  if (!printQueue[kioskId]) {
-    printQueue[kioskId] = [];
-  }
-  printQueue[kioskId].push(imageData);
+
+  // 인쇄 작업 저장
+  printJobs[kioskId] = { file, timestamp: new Date().toISOString() };
   console.log(`Print job added for kiosk: ${kioskId}`);
-  res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
+  res.status(200).send({ message: "Print job added successfully" });
 });
 
+// 인쇄 작업 가져오기 엔드포인트
 app.get("/api/get-print-job/:kioskId", (req, res) => {
-  const { kioskId } = req.params;
-  console.log(`Received print job request for kiosk: ${kioskId}`);
-  if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
-    const job = printQueue[kioskId].shift();
-    console.log(`Print job sent to kiosk: ${kioskId}`);
-    res.json({ job });
+  const kioskId = req.params.kioskId;
+  const job = printJobs[kioskId] || null;
+  if (job) {
+    // 인쇄 작업을 반환하고, 저장소에서 제거
+    printJobs[kioskId] = null;
+    res.status(200).send(job);
   } else {
-    console.log(`No print job available for kiosk: ${kioskId}`);
     res.status(204).send();
   }
 });
 
-// **그 후 정적 파일 서비스**
-const publicPath = path.join(__dirname, "public");
-app.use(express.static(publicPath));
-
-// 모든 다른 GET 요청에 대해 index.html 반환
-app.get("*", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+// 서버 상태 확인 엔드포인트
+app.get("/api/status", (req, res) => {
+  res.status(200).send({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// 404 처리 (API 라우트 외의 모든 요청)
-app.use((req, res, next) => {
-  res.status(404).json({ error: "Not Found" });
-});
-
-// 에러 핸들링 미들웨어
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// 서버 시작
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
