@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HANA STUDIO</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,14 +15,22 @@
       <h1>HANA STUDIO</h1>
       <h2>사진업로드 인쇄</h2>
       <form id="uploadForm">
-        <input type="text" id="kioskIdInput" placeholder="키오스크 ID" />
-        <input type="file" id="photoInput" accept="image/*" />
+        <div class="input-group">
+          <label for="kioskIdInput">키오스크 번호:</label>
+          <input type="text" id="kioskIdInput" placeholder="예: 001" />
+        </div>
+        <div class="input-group">
+          <label for="photoInput" class="file-input-label">사진 선택</label>
+          <input type="file" id="photoInput" accept="image/*" />
+        </div>
         <div id="imageEditor">
           <canvas id="imageCanvas"></canvas>
         </div>
-        <button type="button" id="cropButton">크기저장</button>
-        <button type="button" id="printButton">인쇄 요청</button>
-        <button type="button" id="fullPrintButton">전체인쇄</button>
+        <div class="button-group">
+          <button type="button" id="cropButton">크기저장</button>
+          <button type="button" id="printButton">인쇄 요청</button>
+          <button type="button" id="fullPrintButton">전체인쇄</button>
+        </div>
       </form>
       <div id="result"></div>
     </div>

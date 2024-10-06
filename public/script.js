@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getResizeHandle(x, y) {
-    const handleSize = 20;
+    const handleSize = 30; // Increased handle size
     const handles = [
       { name: "topLeft", x: cropRegion.x, y: cropRegion.y },
       { name: "topRight", x: cropRegion.x + cropRegion.width, y: cropRegion.y },
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resizeCropRegion(x, y) {
-    const minSize = 20;
+    const minSize = 30;
     switch (resizeHandle) {
       case "topLeft":
         cropRegion.width = Math.max(
@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
       cropRegion.height
     );
 
-    const handleSize = 10;
+    const handleSize = 20; // Increased handle size
     ctx.fillStyle = "white";
     ctx.strokeStyle = "red";
     ctx.lineWidth = 2;
@@ -248,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function requestPrint(isFullPrint) {
     const kioskId = kioskIdInput.value;
     if (!kioskId) {
-      resultDiv.textContent = "키오스크 ID를 입력해주세요.";
+      resultDiv.textContent = "키오스크 번호를 입력해주세요.";
       return;
     }
 
