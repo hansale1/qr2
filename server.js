@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path"); // 경로 모듈 추가
+const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
