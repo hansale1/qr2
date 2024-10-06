@@ -39,6 +39,23 @@ document.addEventListener("DOMContentLoaded", () => {
   imageCanvas.addEventListener("mouseup", endDragOrResize);
   imageCanvas.addEventListener("mouseleave", endDragOrResize);
 
+  imageCanvas.addEventListener("touchstart", handleTouch);
+  imageCanvas.addEventListener("touchmove", handleTouch);
+  imageCanvas.addEventListener("touchend", endDragOrResize);
+
+  function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent(
+      e.type === "touchstart" ? "mousedown" : "mousemove",
+      {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      }
+    );
+    imageCanvas.dispatchEvent(mouseEvent);
+  }
+
   function startDragOrResize(e) {
     const rect = imageCanvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
@@ -83,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getResizeHandle(x, y) {
-    const handleSize = 10;
+    const handleSize = 20;
     const handles = [
       { name: "topLeft", x: cropRegion.x, y: cropRegion.y },
       { name: "topRight", x: cropRegion.x + cropRegion.width, y: cropRegion.y },
@@ -175,31 +192,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const handleSize = 10;
     ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.arc(cropRegion.x, cropRegion.y, handleSize / 2, 0, 2 * Math.PI);
-    ctx.arc(
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+
+    function drawHandle(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, handleSize / 2, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    drawHandle(cropRegion.x, cropRegion.y);
+    drawHandle(cropRegion.x + cropRegion.width, cropRegion.y);
+    drawHandle(cropRegion.x, cropRegion.y + cropRegion.height);
+    drawHandle(
       cropRegion.x + cropRegion.width,
-      cropRegion.y,
-      handleSize / 2,
-      0,
-      2 * Math.PI
+      cropRegion.y + cropRegion.height
     );
-    ctx.arc(
-      cropRegion.x,
-      cropRegion.y + cropRegion.height,
-      handleSize / 2,
-      0,
-      2 * Math.PI
-    );
-    ctx.arc(
-      cropRegion.x + cropRegion.width,
-      cropRegion.y + cropRegion.height,
-      handleSize / 2,
-      0,
-      2 * Math.PI
-    );
-    ctx.fill();
-    ctx.stroke();
   }
 
   cropButton.addEventListener("click", () => {
@@ -218,9 +227,18 @@ document.addEventListener("DOMContentLoaded", () => {
       cropRegion.width,
       cropRegion.height
     );
-    imageCanvas.width = cropRegion.width;
-    imageCanvas.height = cropRegion.height;
-    ctx.drawImage(croppedCanvas, 0, 0);
+    image.src = croppedCanvas.toDataURL("image/jpeg");
+    image.onload = () => {
+      imageCanvas.width = cropRegion.width;
+      imageCanvas.height = cropRegion.height;
+      ctx.drawImage(image, 0, 0);
+      cropRegion = {
+        x: 0,
+        y: 0,
+        width: cropRegion.width,
+        height: cropRegion.height,
+      };
+    };
     resultDiv.textContent = "이미지가 크기 조정되어 저장되었습니다.";
   });
 
