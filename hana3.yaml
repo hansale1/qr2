@@ -9,5 +9,5 @@ options:
   buildenv: []
 context:
   git:
-    url: https://github.com/hansale1/qr2.git
+    url: https://github.com/your-repo/hana-studio.git
     branch: main

@@ -1,80 +1,83 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 const app = express();
-const port = process.env.PORT || 3000;
 
-// 미들웨어 설정
-app.use(
-  cors({
-    origin: "*", // 필요 시 특정 도메인으로 변경
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
-// 정적 파일 서빙 설정
-app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
+app.use(bodyParser.json({ limit: "10mb" }));
 
-// 인쇄 작업 저장소
-let printJobs = {};
-
-// 인쇄 작업 추가 엔드포인트
-app.post("/api/print-job/:kioskId", (req, res) => {
-  const kioskId = req.params.kioskId;
-  const { file } = req.body;
-
-  if (!file) {
-    console.error(`No file provided for kiosk: ${kioskId}`);
-    return res.status(400).send({ message: "No file provided" });
-  }
-
-  // 인쇄 작업 저장
-  printJobs[kioskId] = { file, timestamp: new Date().toISOString() };
-  console.log(`Print job added for kiosk: ${kioskId}`);
-  res.status(200).send({ message: "Print job added successfully" });
-
-  // 비동기로 인쇄 작업 처리
-  setImmediate(() => {
-    try {
-      processPrintJob(kioskId, printJobs[kioskId]);
-      console.log(`Print job processed for kiosk: ${kioskId}`);
-    } catch (error) {
-      console.error(`Error processing print job for kiosk: ${kioskId}`, error);
-    }
-  });
+// 로깅 미들웨어
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
 });
 
-// 인쇄 작업 가져오기 엔드포인트
+// API 라우트
+app.get("/api/status", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+const printQueue = {};
+
+app.post("/api/request-print", (req, res) => {
+  const { imageData, kioskId } = req.body;
+  console.log(`Received print request for kiosk: ${kioskId}`);
+  console.log(
+    `Image data length: ${imageData ? imageData.length : "undefined"}`
+  );
+
+  if (!imageData || !kioskId) {
+    console.error("Invalid request: missing imageData or kioskId");
+    return res
+      .status(400)
+      .json({ success: false, message: "잘못된 요청입니다." });
+  }
+
+  try {
+    if (!printQueue[kioskId]) {
+      printQueue[kioskId] = [];
+    }
+    printQueue[kioskId].push(imageData);
+    console.log(`Print job added for kiosk: ${kioskId}`);
+    res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
+  } catch (error) {
+    console.error("Error processing print request:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "서버 내부 오류가 발생했습니다." });
+  }
+});
+
 app.get("/api/get-print-job/:kioskId", (req, res) => {
-  const kioskId = req.params.kioskId;
-  const job = printJobs[kioskId] || null;
-  if (job) {
-    printJobs[kioskId] = null;
-    res.status(200).send(job);
+  const { kioskId } = req.params;
+  console.log(`Received print job request for kiosk: ${kioskId}`);
+  if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
+    const job = printQueue[kioskId].shift();
+    console.log(`Print job sent to kiosk: ${kioskId}`);
+    res.json({ job });
   } else {
+    console.log(`No print job available for kiosk: ${kioskId}`);
     res.status(204).send();
   }
 });
 
-// 서버 상태 확인 엔드포인트
-app.get("/api/status", (req, res) => {
-  res.status(200).send({ status: "OK", timestamp: new Date().toISOString() });
-});
+// 정적 파일 제공
+app.use(express.static(path.join(__dirname, "public")));
 
-// 루트 경로에 대한 라우트 추가
-app.get("/", (req, res) => {
+// 모든 다른 GET 요청에 대해 index.html 반환
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 인쇄 작업 처리 함수 (예시)
-const processPrintJob = (kioskId, job) => {
-  console.log(`Processing print job for kiosk: ${kioskId}, file: ${job.file}`);
-  // 실제 인쇄 작업 로직 구현
-};
+// 오류 처리 미들웨어
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
+});
 
-// 서버 시작
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
