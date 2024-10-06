@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Print server for HANA STUDIO",
   "main": "server.js",
+  "bin": "server.js",
   "scripts": {
     "start": "node server.js"
   },
