@@ -1,0 +1,13 @@
+name: hana3
+app: node@22
+options:
+  ports: "3000"
+  start: npm start
+  env:
+    - name: NODE_ENV
+      value: production
+  buildenv: []
+context:
+  git:
+    url: https://github.com/hansale1/qr2.git
+    branch: main

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HANA STUDIO</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>HANA STUDIO</h1>
+      <h2>사진업로드 인쇄</h2>
+      <form id="uploadForm">
+        <input type="text" id="kioskIdInput" placeholder="키오스크 ID" />
+        <input type="file" id="photoInput" accept="image/*" />
+        <div id="imagePreviewContainer">
+          <img id="imagePreview" alt="미리보기" />
+          <div id="cropBox"></div>
+        </div>
+        <button type="button" id="saveButton">저장</button>
+        <button type="button" id="printButton">인쇄 요청</button>
+      </form>
+      <div id="result"></div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
