@@ -13,5 +13,13 @@
   },
   "engines": {
     "node": "14.x"
+  },
+  "pkg": {
+    "scripts": [
+      "print_handler.py"
+    ],
+    "assets": [
+      "public/**/*"
+    ]
   }
 }
