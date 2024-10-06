@@ -50,15 +50,24 @@ def print_image(image_data):
         hDC.StartDoc('HANA STUDIO Print Job')
         hDC.StartPage()
 
-        dpi = 300
+        # CR-80 카드 크기 (58mm x 90mm)로 조정
+        target_width_mm, target_height_mm = 58, 90
+        dpi = 300  # 프린터 해상도 (DPI)
+        target_width = int(target_width_mm * dpi / 25.4)
+        target_height = int(target_height_mm * dpi / 25.4)
+
         img_width, img_height = image.size
-        ratio = min(210/img_width, 297/img_height)
+        ratio = min(target_width / img_width, target_height / img_height)
         new_width = int(img_width * ratio)
         new_height = int(img_height * ratio)
         image = image.resize((new_width, new_height), Image.LANCZOS)
 
+        # 이미지를 카드 중앙에 배치
+        x_offset = (target_width - new_width) // 2
+        y_offset = (target_height - new_height) // 2
+
         dib = ImageWin.Dib(image)
-        dib.draw(hDC.GetHandleOutput(), (0, 0, new_width, new_height))
+        dib.draw(hDC.GetHandleOutput(), (x_offset, y_offset, x_offset + new_width, y_offset + new_height))
 
         hDC.EndPage()
         hDC.EndDoc()

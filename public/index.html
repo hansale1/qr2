@@ -13,10 +13,10 @@
       <form id="uploadForm">
         <input type="text" id="kioskIdInput" placeholder="키오스크 ID" />
         <input type="file" id="photoInput" accept="image/*" />
-        <div id="imagePreviewContainer">
-          <img id="imagePreview" alt="미리보기" />
+        <div id="imageEditor">
+          <canvas id="imageCanvas"></canvas>
         </div>
-        <button type="button" id="saveButton">저장</button>
+        <button type="button" id="cropButton">크기저장</button>
         <button type="button" id="printButton">인쇄 요청</button>
       </form>
       <div id="result"></div>
