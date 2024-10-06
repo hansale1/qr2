@@ -5,13 +5,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const imageCanvas = document.getElementById("imageCanvas");
   const cropButton = document.getElementById("cropButton");
   const printButton = document.getElementById("printButton");
+  const fullPrintButton = document.getElementById("fullPrintButton");
   const resultDiv = document.getElementById("result");
 
   const ctx = imageCanvas.getContext("2d");
   let image = new Image();
   let cropRegion = { x: 0, y: 0, width: 0, height: 0 };
   let isDragging = false;
+  let isResizing = false;
   let startX, startY;
+  let resizeHandle = "";
 
   photoInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -31,44 +34,127 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  imageCanvas.addEventListener("mousedown", startDrag);
-  imageCanvas.addEventListener("mousemove", drag);
-  imageCanvas.addEventListener("mouseup", endDrag);
-  imageCanvas.addEventListener("mouseleave", endDrag);
+  imageCanvas.addEventListener("mousedown", startDragOrResize);
+  imageCanvas.addEventListener("mousemove", dragOrResize);
+  imageCanvas.addEventListener("mouseup", endDragOrResize);
+  imageCanvas.addEventListener("mouseleave", endDragOrResize);
 
-  function startDrag(e) {
+  function startDragOrResize(e) {
     const rect = imageCanvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
-    isDragging = true;
+
+    resizeHandle = getResizeHandle(startX, startY);
+    if (resizeHandle) {
+      isResizing = true;
+    } else if (isInsideCropRegion(startX, startY)) {
+      isDragging = true;
+    }
   }
 
-  function drag(e) {
-    if (!isDragging) return;
+  function dragOrResize(e) {
     const rect = imageCanvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const dx = x - startX;
-    const dy = y - startY;
 
-    cropRegion.x += dx;
-    cropRegion.y += dy;
-    cropRegion.x = Math.max(
-      0,
-      Math.min(cropRegion.x, imageCanvas.width - cropRegion.width)
-    );
-    cropRegion.y = Math.max(
-      0,
-      Math.min(cropRegion.y, imageCanvas.height - cropRegion.height)
-    );
-
-    startX = x;
-    startY = y;
-    drawImage();
+    if (isDragging) {
+      const dx = x - startX;
+      const dy = y - startY;
+      cropRegion.x = Math.max(
+        0,
+        Math.min(cropRegion.x + dx, imageCanvas.width - cropRegion.width)
+      );
+      cropRegion.y = Math.max(
+        0,
+        Math.min(cropRegion.y + dy, imageCanvas.height - cropRegion.height)
+      );
+      startX = x;
+      startY = y;
+      drawImage();
+    } else if (isResizing) {
+      resizeCropRegion(x, y);
+      drawImage();
+    }
   }
 
-  function endDrag() {
+  function endDragOrResize() {
     isDragging = false;
+    isResizing = false;
+  }
+
+  function getResizeHandle(x, y) {
+    const handleSize = 10;
+    const handles = [
+      { name: "topLeft", x: cropRegion.x, y: cropRegion.y },
+      { name: "topRight", x: cropRegion.x + cropRegion.width, y: cropRegion.y },
+      {
+        name: "bottomLeft",
+        x: cropRegion.x,
+        y: cropRegion.y + cropRegion.height,
+      },
+      {
+        name: "bottomRight",
+        x: cropRegion.x + cropRegion.width,
+        y: cropRegion.y + cropRegion.height,
+      },
+    ];
+
+    for (let handle of handles) {
+      if (
+        Math.abs(x - handle.x) < handleSize &&
+        Math.abs(y - handle.y) < handleSize
+      ) {
+        return handle.name;
+      }
+    }
+    return "";
+  }
+
+  function isInsideCropRegion(x, y) {
+    return (
+      x > cropRegion.x &&
+      x < cropRegion.x + cropRegion.width &&
+      y > cropRegion.y &&
+      y < cropRegion.y + cropRegion.height
+    );
+  }
+
+  function resizeCropRegion(x, y) {
+    const minSize = 20;
+    switch (resizeHandle) {
+      case "topLeft":
+        cropRegion.width = Math.max(
+          minSize,
+          cropRegion.width + cropRegion.x - x
+        );
+        cropRegion.height = Math.max(
+          minSize,
+          cropRegion.height + cropRegion.y - y
+        );
+        cropRegion.x = Math.min(x, cropRegion.x + cropRegion.width - minSize);
+        cropRegion.y = Math.min(y, cropRegion.y + cropRegion.height - minSize);
+        break;
+      case "topRight":
+        cropRegion.width = Math.max(minSize, x - cropRegion.x);
+        cropRegion.height = Math.max(
+          minSize,
+          cropRegion.height + cropRegion.y - y
+        );
+        cropRegion.y = Math.min(y, cropRegion.y + cropRegion.height - minSize);
+        break;
+      case "bottomLeft":
+        cropRegion.width = Math.max(
+          minSize,
+          cropRegion.width + cropRegion.x - x
+        );
+        cropRegion.height = Math.max(minSize, y - cropRegion.y);
+        cropRegion.x = Math.min(x, cropRegion.x + cropRegion.width - minSize);
+        break;
+      case "bottomRight":
+        cropRegion.width = Math.max(minSize, x - cropRegion.x);
+        cropRegion.height = Math.max(minSize, y - cropRegion.y);
+        break;
+    }
   }
 
   function drawImage() {
@@ -87,33 +173,33 @@ document.addEventListener("DOMContentLoaded", () => {
       cropRegion.height
     );
 
-    // Draw resize handles
     const handleSize = 10;
     ctx.fillStyle = "white";
-    ctx.fillRect(
-      cropRegion.x - handleSize / 2,
-      cropRegion.y - handleSize / 2,
-      handleSize,
-      handleSize
+    ctx.beginPath();
+    ctx.arc(cropRegion.x, cropRegion.y, handleSize / 2, 0, 2 * Math.PI);
+    ctx.arc(
+      cropRegion.x + cropRegion.width,
+      cropRegion.y,
+      handleSize / 2,
+      0,
+      2 * Math.PI
     );
-    ctx.fillRect(
-      cropRegion.x + cropRegion.width - handleSize / 2,
-      cropRegion.y - handleSize / 2,
-      handleSize,
-      handleSize
+    ctx.arc(
+      cropRegion.x,
+      cropRegion.y + cropRegion.height,
+      handleSize / 2,
+      0,
+      2 * Math.PI
     );
-    ctx.fillRect(
-      cropRegion.x - handleSize / 2,
-      cropRegion.y + cropRegion.height - handleSize / 2,
-      handleSize,
-      handleSize
+    ctx.arc(
+      cropRegion.x + cropRegion.width,
+      cropRegion.y + cropRegion.height,
+      handleSize / 2,
+      0,
+      2 * Math.PI
     );
-    ctx.fillRect(
-      cropRegion.x + cropRegion.width - handleSize / 2,
-      cropRegion.y + cropRegion.height - handleSize / 2,
-      handleSize,
-      handleSize
-    );
+    ctx.fill();
+    ctx.stroke();
   }
 
   cropButton.addEventListener("click", () => {
@@ -138,7 +224,10 @@ document.addEventListener("DOMContentLoaded", () => {
     resultDiv.textContent = "이미지가 크기 조정되어 저장되었습니다.";
   });
 
-  printButton.addEventListener("click", async () => {
+  printButton.addEventListener("click", () => requestPrint(false));
+  fullPrintButton.addEventListener("click", () => requestPrint(true));
+
+  async function requestPrint(isFullPrint) {
     const kioskId = kioskIdInput.value;
     if (!kioskId) {
       resultDiv.textContent = "키오스크 ID를 입력해주세요.";
@@ -156,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({
           imageData: imageCanvas.toDataURL("image/jpeg"),
           kioskId: kioskId,
+          isFullPrint: isFullPrint,
         }),
       });
 
@@ -170,5 +260,5 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error:", error);
       resultDiv.textContent = `인쇄 요청 중 오류가 발생했습니다: ${error.message}`;
     }
-  });
+  }
 });

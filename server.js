@@ -21,8 +21,10 @@ app.get("/api/status", (req, res) => {
 const printQueue = {};
 
 app.post("/api/request-print", (req, res) => {
-  const { imageData, kioskId } = req.body;
-  console.log(`Received print request for kiosk: ${kioskId}`);
+  const { imageData, kioskId, isFullPrint } = req.body;
+  console.log(
+    `Received print request for kiosk: ${kioskId}, Full Print: ${isFullPrint}`
+  );
   console.log(
     `Image data length: ${imageData ? imageData.length : "undefined"}`
   );
@@ -38,7 +40,7 @@ app.post("/api/request-print", (req, res) => {
     if (!printQueue[kioskId]) {
       printQueue[kioskId] = [];
     }
-    printQueue[kioskId].push(imageData);
+    printQueue[kioskId].push({ imageData, isFullPrint });
     console.log(`Print job added for kiosk: ${kioskId}`);
     res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
   } catch (error) {
