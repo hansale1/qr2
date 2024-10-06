@@ -1,71 +1,109 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const path = require("path");
-const morgan = require("morgan"); // morgan 추가
-const app = express();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("uploadForm");
+  const kioskIdInput = document.getElementById("kioskIdInput");
+  const photoInput = document.getElementById("photoInput");
+  const imagePreview = document.getElementById("imagePreview");
+  const cropBox = document.getElementById("cropBox");
+  const saveButton = document.getElementById("saveButton");
+  const printButton = document.getElementById("printButton");
+  const resultDiv = document.getElementById("result");
 
-// 미들웨어 설정
-app.use(cors());
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(morgan("combined")); // 모든 요청 로그
+  let originalImage;
+  let cropBoxRect = { x: 0, y: 0, width: 200, height: 200 };
 
-const printQueue = {};
+  photoInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        originalImage = new Image();
+        originalImage.src = e.target.result;
+        originalImage.onload = initCropBox;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
 
-// **API 라우트를 먼저 정의**
-app.get("/api/status", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
-});
-
-app.post("/api/request-print", (req, res) => {
-  const { imageData, kioskId } = req.body;
-  if (!imageData || !kioskId) {
-    return res
-      .status(400)
-      .json({ success: false, message: "imageData와 kioskId가 필요합니다." });
+  function initCropBox() {
+    const containerRect = imagePreview.getBoundingClientRect();
+    cropBoxRect = {
+      x: containerRect.width / 4,
+      y: containerRect.height / 4,
+      width: containerRect.width / 2,
+      height: containerRect.height / 2,
+    };
+    updateCropBox();
   }
-  if (!printQueue[kioskId]) {
-    printQueue[kioskId] = [];
+
+  function updateCropBox() {
+    cropBox.style.left = `${cropBoxRect.x}px`;
+    cropBox.style.top = `${cropBoxRect.y}px`;
+    cropBox.style.width = `${cropBoxRect.width}px`;
+    cropBox.style.height = `${cropBoxRect.height}px`;
   }
-  printQueue[kioskId].push(imageData);
-  console.log(`Print job added for kiosk: ${kioskId}`);
-  res.json({ success: true, message: "인쇄 요청이 큐에 추가되었습니다." });
-});
 
-app.get("/api/get-print-job/:kioskId", (req, res) => {
-  const { kioskId } = req.params;
-  console.log(`Received print job request for kiosk: ${kioskId}`);
-  if (printQueue[kioskId] && printQueue[kioskId].length > 0) {
-    const job = printQueue[kioskId].shift();
-    console.log(`Print job sent to kiosk: ${kioskId}`);
-    res.json({ job });
-  } else {
-    console.log(`No print job available for kiosk: ${kioskId}`);
-    res.status(204).send();
-  }
-});
+  saveButton.addEventListener("click", () => {
+    if (!originalImage) {
+      resultDiv.textContent = "이미지를 먼저 선택해주세요.";
+      return;
+    }
 
-// **그 후 정적 파일 서비스**
-const publicPath = path.join(__dirname, "public");
-app.use(express.static(publicPath));
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const scaleX = originalImage.width / imagePreview.width;
+    const scaleY = originalImage.height / imagePreview.height;
 
-// 모든 다른 GET 요청에 대해 index.html 반환
-app.get("*", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
-});
+    canvas.width = cropBoxRect.width * scaleX;
+    canvas.height = cropBoxRect.height * scaleY;
 
-// 404 처리 (API 라우트 외의 모든 요청)
-app.use((req, res, next) => {
-  res.status(404).json({ error: "Not Found" });
-});
+    ctx.drawImage(
+      originalImage,
+      cropBoxRect.x * scaleX,
+      cropBoxRect.y * scaleY,
+      cropBoxRect.width * scaleX,
+      cropBoxRect.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
-// 에러 핸들링 미들웨어
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
-});
+    imagePreview.src = canvas.toDataURL("image/jpeg");
+    resultDiv.textContent = "이미지가 저장되었습니다.";
+  });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  printButton.addEventListener("click", async () => {
+    const kioskId = kioskIdInput.value;
+    if (!kioskId) {
+      resultDiv.textContent = "키오스크 ID를 입력해주세요.";
+      return;
+    }
+    if (!imagePreview.src) {
+      resultDiv.textContent = "이미지를 먼저 선택하고 저장해주세요.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/request-print", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageData: imagePreview.src,
+          kioskId: kioskId,
+        }),
+      });
+
+      if (response.ok) {
+        resultDiv.textContent = "인쇄 요청이 성공적으로 전송되었습니다.";
+      } else {
+        throw new Error("인쇄 요청 실패");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      resultDiv.textContent = "인쇄 요청 중 오류가 발생했습니다.";
+    }
+  });
 });
